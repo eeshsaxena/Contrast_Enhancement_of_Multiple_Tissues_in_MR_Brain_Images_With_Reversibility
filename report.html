@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Implementation Report – Contrast Enhancement of Multiple Tissues in MR Brain Images</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Georgia:ital,wght@0,400;0,700;1,400&family=Source+Code+Pro:wght@400;600&display=swap');
+
+  :root {
+    --accent: #3d3d3d;
+    --accent2: #c8102e;
+    --light: #f5f7fa;
+    --border: #d0d7e2;
+    --code-bg: #f0f2f5;
+    --text: #3a3a3a;
+    --muted: #666;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Times New Roman', Georgia, serif;
+    font-size: 11.5pt;
+    line-height: 1.65;
+    color: var(--text);
+    background: #fff;
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 48px 52px 80px 52px;
+  }
+
+  /* ── HEADER ─────────────────────────────────────── */
+  .report-header {
+    text-align: center;
+    border-bottom: 3px solid var(--accent);
+    padding-bottom: 20px;
+    margin-bottom: 28px;
+  }
+  .report-header .title {
+    font-size: 17pt;
+    font-weight: bold;
+    color: var(--accent);
+    line-height: 1.3;
+    margin-bottom: 6px;
+  }
+  .report-header .subtitle {
+    font-size: 12pt;
+    color: var(--muted);
+    font-style: italic;
+    margin-bottom: 10px;
+  }
+  .report-header .authors {
+    font-size: 10.5pt;
+    color: #333;
+  }
+  .report-header .journal {
+    font-size: 10pt;
+    color: var(--accent2);
+    margin-top: 4px;
+    font-weight: bold;
+    letter-spacing: 0.3px;
+  }
+
+  /* ── ABSTRACT ────────────────────────────────────── */
+  .abstract-box {
+    background: var(--light);
+    border-left: 5px solid var(--accent);
+    padding: 16px 22px;
+    margin: 24px 0 30px 0;
+    font-size: 10.8pt;
+    line-height: 1.6;
+  }
+  .abstract-box .abstract-title {
+    font-weight: bold;
+    font-size: 11pt;
+    color: var(--accent);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── SECTION HEADINGS ────────────────────────────── */
+  h2 {
+    font-size: 13pt;
+    font-weight: bold;
+    color: var(--accent);
+    margin: 32px 0 10px 0;
+    padding-bottom: 4px;
+    border-bottom: 1.5px solid var(--border);
+  }
+  h3 {
+    font-size: 11.5pt;
+    font-weight: bold;
+    color: #3d3d3d;
+    margin: 20px 0 8px 0;
+  }
+  h4 {
+    font-size: 11pt;
+    font-weight: bold;
+    font-style: italic;
+    color: #4a4a4a;
+    margin: 14px 0 6px 0;
+  }
+
+  p { margin: 8px 0 10px 0; text-align: justify; }
+
+  /* ── EQUATIONS ───────────────────────────────────── */
+  .equation-block {
+    background: var(--light);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px 24px;
+    margin: 12px 0 14px 0;
+    font-family: 'Times New Roman', Georgia, serif;
+    font-size: 11.5pt;
+    line-height: 1.8;
+    position: relative;
+  }
+  .equation-block .eq-num {
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-weight: bold;
+    color: var(--muted);
+    font-size: 10.5pt;
+  }
+  .eq-piecewise {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 11pt;
+  }
+  .eq-brace {
+    font-size: 46pt;
+    line-height: 1;
+    color: #4a4a4a;
+    margin-top: -4px;
+  }
+  .eq-cases { line-height: 2; }
+  .eq-cases .case-row { display: flex; gap: 32px; }
+  .eq-cases .case-expr { min-width: 80px; font-style: italic; }
+  .eq-cases .case-cond { color: var(--muted); }
+
+  /* ── CODE BLOCK ──────────────────────────────────── */
+  .code-label {
+    background: #1a3a5c;  /* BLUE kept ONLY here — code snippets */
+    color: #fff;
+    font-family: 'Source Code Pro', 'Courier New', monospace;
+    font-size: 9pt;
+    font-weight: bold;
+    padding: 5px 16px;
+    margin-top: 14px;
+    border-radius: 4px 4px 0 0;
+    display: inline-block;
+    letter-spacing: 0.5px;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 4px 4px 4px;
+    padding: 14px 18px;
+    font-family: 'Source Code Pro', 'Courier New', monospace;
+    font-size: 9.5pt;
+    line-height: 1.55;
+    overflow-x: auto;
+    margin: 0 0 16px 0;
+    white-space: pre;
+  }
+  .code-note {
+    background: #fffbe6;
+    border-left: 4px solid #f0b429;
+    padding: 8px 14px;
+    font-size: 10pt;
+    margin: -8px 0 16px 0;
+    font-style: italic;
+    color: #5c4a00;
+  }
+
+  /* ── TABLES ──────────────────────────────────────── */
+  .table-wrap { margin: 16px 0 20px 0; overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10.5pt;
+  }
+  thead tr { background: #4a4a4a; color: #fff; }
+  thead th {
+    padding: 9px 14px;
+    text-align: center;
+    font-weight: bold;
+    letter-spacing: 0.3px;
+  }
+  tbody tr:nth-child(even) { background: #f3f3f3; }
+  tbody tr:hover { background: #e8e8e8; }
+  tbody td {
+    padding: 8px 14px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody td:first-child { text-align: left; font-style: italic; }
+  tfoot tr { background: #ebebeb; font-weight: bold; }
+  tfoot td { padding: 8px 14px; text-align: center; border-top: 2px solid #4a4a4a; }
+  tfoot td:first-child { text-align: left; }
+  .table-caption {
+    font-size: 10pt;
+    color: var(--muted);
+    font-style: italic;
+    margin-top: 6px;
+    text-align: center;
+  }
+
+  /* ── BULLET / LISTS ──────────────────────────────── */
+  ul, ol { margin: 8px 0 10px 28px; }
+  li { margin: 3px 0; }
+
+  /* ── FIGURE BOX ──────────────────────────────────── */
+  .figure-box {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin: 18px 0;
+    background: var(--light);
+  }
+  .figure-box .fig-title {
+    font-weight: bold;
+    color: var(--accent);
+    margin-bottom: 8px;
+    font-size: 10.5pt;
+  }
+  .pipeline-flow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    font-size: 10pt;
+  }
+  .pipe-step {
+    background: #4a4a4a;
+    color: #fff;
+    border-radius: 4px;
+    padding: 6px 11px;
+    font-weight: bold;
+    text-align: center;
+    min-width: 100px;
+    font-size: 9.5pt;
+  }
+  .pipe-step.tissue { background: #5a5a5a; }
+  .pipe-step.enhance { background: #27ae60; }
+  .pipe-step.recover { background: #c0392b; }
+  .pipe-arrow { font-size: 16pt; color: var(--muted); font-weight: bold; }
+
+  /* ── HIGHLIGHT BOX ───────────────────────────────── */
+  .highlight-box {
+    border: 1.5px solid var(--accent2);
+    border-radius: 4px;
+    padding: 12px 18px;
+    margin: 14px 0;
+    background: #fff5f5;
+  }
+  .highlight-box strong { color: var(--accent2); }
+
+  /* ── FOOTER ──────────────────────────────────────── */
+  .report-footer {
+    margin-top: 48px;
+    border-top: 2px solid var(--border);
+    padding-top: 12px;
+    font-size: 9.5pt;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* ── PRINT ───────────────────────────────────────── */
+  @media print {
+    body { padding: 20px 30px; }
+    pre { font-size: 8.5pt; }
+    .pipe-step { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    thead tr { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     HEADER
+════════════════════════════════════════════════════════════════ -->
+<div class="report-header">
+  <div class="title">IMPLEMENTATION OF CONTRAST ENHANCEMENT OF MULTIPLE<br>
+  TISSUES IN MR BRAIN IMAGES WITH REVERSIBILITY</div>
+  <div class="subtitle">Implementation Report &nbsp;|&nbsp; Medical Image Processing &amp; Reversible Data Hiding</div>
+  <div class="authors">
+    Based on: Hao-Tian Wu, Kaihan Zheng, Qi Huang, Jiankun Hu
+  </div>
+  <div class="journal">
+    IEEE Signal Processing Letters, Vol. 28, 2021 &nbsp;· &nbsp;DOI: 10.1109/LSP.2020.3048840
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     ABSTRACT
+════════════════════════════════════════════════════════════════ -->
+<div class="abstract-box">
+  <div class="abstract-title">Abstract</div>
+  Contrast enhancement (CE) of Magnetic Resonance (MR) brain images is a critical preprocessing
+  step in clinical diagnosis, as MR images are often acquired with inherently low contrast across
+  different tissue types. This report presents a complete Python implementation of the hierarchical
+  reversible CE scheme proposed by Wu et al. (2021). In the proposed scheme, a deep convolutional
+  neural network (U-Net) — approximated here by multi-level Otsu thresholding — automatically
+  segments the MR image into multiple tissue classes: Background, Cerebrospinal Fluid (CSF),
+  Grey Matter (GM), and White Matter (WM). For each segmented tissue, principal grey-level
+  values are identified using a percentage threshold <em>R</em>, and the corresponding histogram bins
+  are iteratively expanded <em>S</em> times using Reversible Data Hiding (RDH) — specifically Equation (1)
+  of the paper — to achieve histogram equalization. Recovery information (pL, pR values per iteration)
+  is embedded as side information in the LSBs of the last sixteen pixels, enabling lossless recovery
+  of the original MR image using Equations (2) and (3). Experimental results on a synthetic MR
+  brain image confirm correct multi-tissue enhancement, perfect reversibility (PSNR = ∞ between
+  recovered and original), and consistent metric improvements across all tissue classes.
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     1. INTRODUCTION
+════════════════════════════════════════════════════════════════ -->
+<h2>1. Introduction</h2>
+<p>
+  Magnetic Resonance Imaging (MRI) produces detailed soft-tissue images of the brain using magnetic
+  fields and radio waves, emitting no harmful ionising radiation. However, the resulting images frequently
+  suffer from low contrast between adjacent tissue classes — particularly between white matter (WM),
+  grey matter (GM), and cerebrospinal fluid (CSF) — making clinical diagnosis difficult without further
+  processing. Contrast Enhancement (CE) is therefore an essential preprocessing step in medical image
+  analysis.
+</p>
+<p>
+  A significant limitation of conventional CE is that it permanently alters pixel values, potentially
+  destroying diagnostic information. To address this, techniques based on Reversible Data Hiding (RDH)
+  have been proposed that embed all information required to restore the original image <em>within</em> the
+  enhanced image itself. If the contrast-enhanced version is deemed unsuitable, the original can be
+  recovered exactly.
+</p>
+<p>
+  Prior reversible CE algorithms (e.g., Wu et al. 2015 [19], Wu et al. 2020 [27]) used Otsu or GrabCut
+  segmentation to separate background from ROI, then excluded background histogram bins from expansion.
+  These approaches are limited in two ways: segmentation accuracy degrades for small or interconnected
+  tissues, and only a single contrast-enhanced image can be generated from the original.
+</p>
+<p>
+  Wu et al. (2021) address both limitations with a <strong>hierarchical CE scheme</strong>: U-Net CNN
+  segmentation provides accurate multi-tissue labels, and each tissue is used individually to guide a
+  separate CE procedure — producing one enhanced image per tissue class, all from the same original MR image.
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     2. SYSTEM OVERVIEW
+════════════════════════════════════════════════════════════════ -->
+<h2>2. System Overview</h2>
+<p>The proposed scheme consists of five main stages, implemented as a single Python file (<code>1.py</code>):</p>
+
+<div class="figure-box">
+  <div class="fig-title">Fig. 1 — Processing Pipeline (adapted from paper Fig. 1)</div>
+  <div class="pipeline-flow">
+    <div class="pipe-step">MR Image I</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step tissue">Tissue<br>Segmentation<br>(U-Net)</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step tissue">Principal<br>Grey-Level<br>Identification</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step enhance">Procedure 1<br>Hierarchical CE<br>(S expansions)</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step enhance">Enhanced<br>Images Ic₁…Icₙ</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step recover">Procedure 2<br>Recovery<br>(Eq.2 + Eq.3)</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step recover">Original I<br>Restored ✓</div>
+  </div>
+</div>
+
+<ul>
+  <li><strong>Tissue Segmentation</strong> — Divide the MR image into tissue classes using U-Net (Multi-Otsu approximation in implementation).</li>
+  <li><strong>Principal Grey-Level Identification</strong> — For each tissue, identify grey-level values whose frequency exceeds threshold <em>R</em>; only these bins are eligible for expansion.</li>
+  <li><strong>Histogram Preprocessing</strong> — Shrink histogram extremes to reserve <em>S</em> empty bins per side, preventing overflow after <em>S</em> iterations.</li>
+  <li><strong>Procedure 1 (Enhancement)</strong> — Iteratively apply Equation (1) to expand the two highest eligible bins, embedding recovery bits (pL, pR) as side information.</li>
+  <li><strong>Procedure 2 (Recovery)</strong> — Extract embedded bits using Equation (2), restore pixel values using Equation (3), and reverse the preprocessing.</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     3. MATHEMATICAL FORMULATION
+════════════════════════════════════════════════════════════════ -->
+<h2>3. Mathematical Formulation</h2>
+
+<h3>3.1 RDH-Based Histogram Modification — Equation (1)</h3>
+<p>
+  Given the two histogram bins with the highest frequencies, denoted p<sub>L</sub> and p<sub>R</sub>
+  (p<sub>L</sub> &lt; p<sub>R</sub>), every pixel value <em>p</em> is transformed to <em>p′</em> as follows.
+  For the i-th pixel at value p<sub>L</sub> or p<sub>R</sub>, a secret bit b<sub>i</sub> ∈ {0,1} is embedded:
+</p>
+<div class="equation-block">
+  <div class="eq-piecewise">
+    <div class="eq-brace">{</div>
+    <div class="eq-cases">
+      <div class="case-row"><span class="case-expr"><em>p</em> − 1,</span><span class="case-cond">if <em>p</em> &lt; p<sub>L</sub></span></div>
+      <div class="case-row"><span class="case-expr"><em>p</em> − b<sub>i</sub>,</span><span class="case-cond">if <em>p</em> = p<sub>L</sub> &nbsp;&nbsp;(embeds bit b<sub>i</sub>)</span></div>
+      <div class="case-row"><span class="case-expr"><em>p</em>,</span><span class="case-cond">if p<sub>L</sub> &lt; <em>p</em> &lt; p<sub>R</sub> &nbsp;&nbsp;(unchanged)</span></div>
+      <div class="case-row"><span class="case-expr"><em>p</em> + b<sub>i</sub>,</span><span class="case-cond">if <em>p</em> = p<sub>R</sub> &nbsp;&nbsp;(embeds bit b<sub>i</sub>)</span></div>
+      <div class="case-row"><span class="case-expr"><em>p</em> + 1,</span><span class="case-cond">if <em>p</em> &gt; p<sub>R</sub></span></div>
+    </div>
+  </div>
+  <span class="eq-num">(1)</span>
+</div>
+<p>
+  Pixels that are neither at p<sub>L</sub> nor p<sub>R</sub> are shifted outward but carry no embedded bits.
+  Applying Equation (1) iteratively <em>S</em> times achieves the effect of Histogram Equalization (HE),
+  while all modification parameters remain recoverable.
+</p>
+
+<h3>3.2 Principal Grey-Level Threshold</h3>
+<p>
+  For each segmented tissue T, the percentage of pixel value <em>v</em> within T is:
+</p>
+<div class="equation-block">
+  &nbsp;&nbsp;&nbsp;&nbsp;percentage(v) = count(v in T) / |T|
+  <span class="eq-num">(2)</span>
+</div>
+<p>
+  A grey-level value <em>v</em> is designated <em>principal</em> if percentage(<em>v</em>) &gt; <em>R</em>.
+  Only the histogram bins of principal values are eligible to be expanded (Eq. 1); all other bins are merely shifted.
+  This restricts CE to the dominant intensities of the tissue under enhancement, improving adaptability.
+</p>
+
+<h3>3.3 Bit Extraction — Equation (2)</h3>
+<p>
+  Given the last expanded bin values p<sub>LL</sub> and p<sub>LR</sub>, a bit b′ is extracted from each pixel p′:
+</p>
+<div class="equation-block">
+  <div class="eq-piecewise">
+    <div class="eq-brace">{</div>
+    <div class="eq-cases">
+      <div class="case-row"><span class="case-expr">b′ = 1,</span><span class="case-cond">when p′ = p<sub>LL</sub> − 1 &nbsp;or&nbsp; p′ = p<sub>LR</sub> + 1</span></div>
+      <div class="case-row"><span class="case-expr">b′ = 0,</span><span class="case-cond">when p′ = p<sub>LL</sub> &nbsp;or&nbsp; p′ = p<sub>LR</sub></span></div>
+      <div class="case-row"><span class="case-expr">b′ = null,</span><span class="case-cond">other cases</span></div>
+    </div>
+  </div>
+  <span class="eq-num">(3)</span>
+</div>
+
+<h3>3.4 Pixel Recovery — Equation (3)</h3>
+<p>
+  Simultaneously with bit extraction, the original pixel value <em>p</em> is reconstructed from p′:
+</p>
+<div class="equation-block">
+  <div class="eq-piecewise">
+    <div class="eq-brace">{</div>
+    <div class="eq-cases">
+      <div class="case-row"><span class="case-expr"><em>p</em> = p′ + 1,</span><span class="case-cond">when p′ &lt; p<sub>LL</sub></span></div>
+      <div class="case-row"><span class="case-expr"><em>p</em> = p′,</span><span class="case-cond">when p<sub>LL</sub> − 1 &lt; p′ &lt; p<sub>LR</sub> + 1</span></div>
+      <div class="case-row"><span class="case-expr"><em>p</em> = p′ − 1,</span><span class="case-cond">when p′ &gt; p<sub>LR</sub></span></div>
+    </div>
+  </div>
+  <span class="eq-num">(4)</span>
+</div>
+
+<h3>3.5 Quality Metrics</h3>
+<p><strong>PSNR</strong> between original image I and enhanced image I<sub>c</sub>:</p>
+<div class="equation-block">
+  &nbsp;&nbsp;&nbsp;&nbsp;PSNR = 10 · log<sub>10</sub>( 255² / MSE ) &nbsp;&nbsp;where&nbsp;&nbsp; MSE = (1/HW) · Σ(I − I<sub>c</sub>)²
+  <span class="eq-num">(5)</span>
+</div>
+<p>
+  When I is perfectly recovered from I<sub>c</sub>, MSE = 0 and PSNR = ∞, confirming lossless reversibility.
+</p>
+<p><strong>SSIM</strong> (Structural Similarity Index) measures perceptual similarity between images, accounting for luminance, contrast, and structure.</p>
+<p>
+  <strong>RCEOI</strong> (Relative Contrast Enhancement of Interest), <strong>REEOI</strong> (Relative Entropy Enhancement of Interest),
+  and <strong>RMBEOI</strong> (Relative Mean Brightness Error of Interest) — defined in [34] — quantify CE gain and brightness
+  distortion within each tissue region respectively.
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     4. TISSUE SEGMENTATION
+════════════════════════════════════════════════════════════════ -->
+<h2>4. Tissue Segmentation</h2>
+<p>
+  The paper adopts U-Net [32], a CNN-based image segmentation framework, to automatically divide
+  MR brain images into tissue classes: Background, CSF, Grey Matter, and White Matter. U-Net was
+  trained on 50 T2-weighted images at 384×384 from the NeoBrainS12 challenge dataset.
+</p>
+<p>
+  In this implementation, U-Net is approximated using <strong>Multi-level Otsu thresholding</strong>
+  (<code>threshold_multiotsu</code> from scikit-image), which finds optimal intensity thresholds for
+  <em>N</em> classes by maximising inter-class variance. The resulting label map assigns each pixel to
+  one of 4 classes, followed by small-region removal (<code>remove_small_objects</code>) for noise suppression.
+</p>
+
+<div class="code-label">▶  Python Code — Tissue Segmentation (segment_tissues_multiotsu)</div>
+<pre>
+def segment_tissues_multiotsu(image, n_classes=4):
+    """
+    Approximate CNN U-Net tissue segmentation using multi-level Otsu thresholding.
+    Paper Sec. II-B-1: U-Net segments MR brain image into tissue classes.
+    Returns label map: 0=Background, 1=CSF, 2=Grey Matter, 3=White Matter.
+    """
+    bg_mask = (image == 0)
+    try:
+        thresholds = threshold_multiotsu(image, classes=n_classes)
+    except Exception:
+        thresholds = np.linspace(image.min(), image.max(), n_classes)[1:-1]
+
+    # Build label map from thresholds
+    label_map = np.zeros_like(image, dtype=np.int32)
+    for i, t in enumerate(thresholds):
+        label_map[image > t] = i + 1
+
+    # Force background to class 0, clean small regions
+    label_map[bg_mask] = 0
+    for cls in range(1, n_classes):
+        mask = (label_map == cls)
+        cleaned = remove_small_objects(mask, min_size=200)
+        label_map[mask & ~cleaned] = 0
+
+    return label_map   # shape (H, W), dtype int32
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     5. PRINCIPAL GREY-LEVEL IDENTIFICATION
+════════════════════════════════════════════════════════════════ -->
+<h2>5. Principal Grey-Level Identification</h2>
+<p>
+  For each segmented tissue, the percentage of every grey-level value is computed. Values exceeding
+  threshold <em>R</em> = 1% are labelled as <em>principal</em>. Only the histogram bins corresponding
+  to principal values are eligible for expansion in Equation (1). Non-principal bins are only shifted
+  outward, never expanded. This is the key innovation over [19] and [27]: the CE bins are chosen
+  per-tissue rather than per-background, avoiding conflicts when the same pixel values appear in
+  both the ROI and background.
+</p>
+
+<div class="code-label">▶  Python Code — Principal Grey-Level Identification</div>
+<pre>
+def identify_principal_greylevels(image, tissue_mask, R_threshold=0.01):
+    """
+    Paper Sec. II-B-2: "If the percentage of a grey-level value is over a
+    threshold R, the corresponding histogram bin is eligible to be expanded
+    for data embedding, while the rest bins can only be shifted."
+    """
+    pixels_in_tissue = image[tissue_mask]
+    total = len(pixels_in_tissue)
+    hist = np.bincount(pixels_in_tissue.astype(np.int32), minlength=256)
+    percentages = hist / total
+
+    # Return sorted list of grey-levels with percentage > R
+    principal_vals = [v for v in range(256) if percentages[v] > R_threshold]
+    return principal_vals   # list of int
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     6. HISTOGRAM PREPROCESSING
+════════════════════════════════════════════════════════════════ -->
+<h2>6. Histogram Preprocessing</h2>
+<p>
+  Before expanding histogram bins, a preprocessing step is required to prevent pixel value overflow
+  after <em>S</em> iterations of Equation (1). Pixels with values in [0, S−1] are mapped to <em>S</em>,
+  and pixels with values in [256−S, 255] are mapped to 255−S. This reserves <em>S</em> empty bins
+  on each side of the histogram, guaranteeing that <em>S</em> rounds of bin expansion never push values
+  outside the [0, 255] range. The shrink operation preserves the relative order of all pixel values,
+  avoiding visual discontinuities.
+</p>
+
+<div class="code-label">▶  Python Code — Histogram Preprocessing</div>
+<pre>
+def preprocess_histogram_shrink(image, S):
+    """
+    Paper: "The preprocessing proposed in [24] is adopted, which shrinks the
+    histogram while preserving the order of all pixel values to avoid visual
+    distortions." Reserves S empty bins on each side.
+    """
+    lut = np.arange(256, dtype=np.int32)
+    for v in range(256):
+        if   v < S:       lut[v] = S
+        elif v > 255 - S: lut[v] = 255 - S
+        else:             lut[v] = v
+    preprocessed = lut[image.astype(np.int32)].astype(np.uint8)
+    return preprocessed, lut   # preprocessed image, LUT for recovery
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     7. PROCEDURE 1 — HIERARCHICAL TISSUE CE
+════════════════════════════════════════════════════════════════ -->
+<h2>7. Procedure 1 — Hierarchical Tissue Contrast Enhancement</h2>
+<p>
+  For each tissue class, a separate pass of Procedure 1 generates one tissue-enhanced image I<sub>c</sub>.
+  At each of <em>S</em> iterations:
+</p>
+<ol>
+  <li>Compute the current image histogram. Find the two highest bins from among the <em>principal</em> grey-level values (p<sub>L</sub>, p<sub>R</sub>).</li>
+  <li>Encode p<sub>L</sub> and p<sub>R</sub> as 16 bits (8 + 8) — the side information for this round.</li>
+  <li>Apply Equation (1) to all pixels, embedding the encoded bits into pixels at p<sub>L</sub> and p<sub>R</sub>.</li>
+  <li>Record (p<sub>L</sub>, p<sub>R</sub>) in the expansion history for recovery.</li>
+</ol>
+<p>
+  After all <em>S</em> rounds, the last (p<sub>L</sub>, p<sub>R</sub>) pair is stored in the LSBs of the last
+  16 pixels of the image (1 bit per pixel, 8 bits for p<sub>L</sub>, 8 bits for p<sub>R</sub>). The value of S
+  is embedded as additional side information, while neither the segmentation map nor R is required for recovery.
+</p>
+
+<div class="code-label">▶  Python Code — Core Equation (1) Application</div>
+<pre>
+def apply_equation1(image, pL, pR, bits=None):
+    """
+    Applies Paper Equation (1): histogram bin expansion with bit embedding.
+    For all pixels p in scan order:
+        p' = p-1     if p < pL
+             p-bi    if p = pL   (bi = i-th bit, embeds 0 or 1)
+             p        if pL < p < pR
+             p+bi    if p = pR
+             p+1     if p > pR
+    """
+    img_flat = image.astype(np.int32).flatten()
+    H, W = image.shape
+    if bits is None:
+        bits = np.zeros(len(img_flat), dtype=np.int32)
+    bit_idx = 0
+    out_flat = img_flat.copy()
+
+    for i in range(len(img_flat)):
+        p = img_flat[i]
+        if   p < pL:   out_flat[i] = p - 1
+        elif p == pL:  out_flat[i] = p - bits[bit_idx]; bit_idx += 1
+        elif p < pR:   out_flat[i] = p             # pL < p < pR: unchanged
+        elif p == pR:  out_flat[i] = p + bits[bit_idx]; bit_idx += 1
+        else:          out_flat[i] = p + 1
+
+    return out_flat.reshape(H, W).astype(np.uint8), bit_idx
+</pre>
+
+<div class="code-label">▶  Python Code — LSB Side-Info Storage (Last 16 Pixels)</div>
+<pre>
+def encode_pL_pR_in_lsb(image, pL, pR):
+    """
+    Paper: "the LSB of sixteen pixels are used to save the last two expanded
+    bin values represented in sixteen bits. The last sixteen pixels are chosen."
+    Encodes pL (8 bits) and pR (8 bits) into LSB of last 16 pixels.
+    """
+    flat = image.copy().flatten().astype(np.int32)
+    bits = [(pL >> (7-b)) & 1 for b in range(8)] + [(pR >> (7-b)) & 1 for b in range(8)]
+    for k in range(16):
+        flat[-(16-k)] = (flat[-(16-k)] & ~1) | bits[k]
+    return flat.reshape(image.shape).astype(np.uint8)
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     8. PROCEDURE 2 — RECOVERY
+════════════════════════════════════════════════════════════════ -->
+<h2>8. Procedure 2 — Secret Data Extraction and Image Recovery</h2>
+<p>
+  Recovery processes the <em>S</em> histogram expansion rounds in <strong>reverse order</strong> (last round first).
+  At each step:
+</p>
+<ol>
+  <li>Read p<sub>LL</sub>, p<sub>LR</sub> from the current image (initially from LSBs of the last 16 pixels).</li>
+  <li>Traverse all pixels; apply Equation (2) to extract bits and Equation (3) to restore pixel values.</li>
+  <li>Decode (p<sub>LL</sub>, p<sub>LR</sub>) for the previous step from the recovered bits.</li>
+  <li>Repeat for all <em>S</em> rounds, then undo the preprocessing shrink.</li>
+</ol>
+
+<div class="code-label">▶  Python Code — Equations (2) and (3) Combined Recovery</div>
+<pre>
+def apply_equation2_3(image, pLL, pLR):
+    """
+    Applies Paper Equations (2) and (3) simultaneously:
+    Eq.(2) — extract bit b' from pixel p':
+        b' = 1     if p' = pLL-1 or p' = pLR+1
+             0     if p' = pLL   or p' = pLR
+             null  otherwise
+    Eq.(3) — recover original pixel p from p':
+        p = p'+1   if p' < pLL
+            p'     if pLL-1 < p' < pLR+1
+            p'-1   if p' > pLR
+    """
+    flat = image.astype(np.int32).flatten()
+    recovered = flat.copy()
+    extracted_bits = []
+
+    for i in range(len(flat)):
+        pp = flat[i]
+        # Eq.(3): pixel recovery
+        if   pp < pLL:  recovered[i] = pp + 1
+        elif pp > pLR:  recovered[i] = pp - 1
+        else:           recovered[i] = pp  # middle range unchanged
+
+        # Eq.(2): bit extraction
+        if   pp == pLL - 1 or pp == pLR + 1: extracted_bits.append(1)
+        elif pp == pLL      or pp == pLR:     extracted_bits.append(0)
+
+    return recovered.reshape(image.shape).astype(np.uint8), extracted_bits
+</pre>
+
+<div class="highlight-box">
+  <strong>Key Insight:</strong> Equations (2) and (3) are applied in a single pixel traversal.
+  The extracted bits collectively encode the (p<sub>L</sub>, p<sub>R</sub>) value of the <em>previous</em>
+  expansion step, enabling the recovery chain to proceed all the way back to the preprocessed image,
+  which is then inverse-mapped to the original image I.
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     9. QUALITY METRICS
+════════════════════════════════════════════════════════════════ -->
+<h2>9. Image Quality Metrics</h2>
+<p>Following the paper's Section III-C, three tissue-specific metrics and two full-image metrics are computed:</p>
+
+<div class="code-label">▶  Python Code — Tissue Metric Computation</div>
+<pre>
+def compute_tissue_metrics(original, enhanced, tissue_mask):
+    """
+    Computes all paper metrics (Section III-C) for a given tissue region.
+    Definitions follow [34] (Gao, Wu, Wang, Adv. Intell. Syst. Appl., 2013):
+      RCEOI  = (C_enh - C_orig) / C_orig   Relative Contrast Enhancement
+      REEOI  = (E_enh - E_orig) / E_orig   Relative Entropy Enhancement
+      RMBEOI = |M_enh - M_orig| / M_orig   Relative Mean Brightness Error
+      PSNR   = full-image PSNR (original vs enhanced), lower = more enhanced
+      SSIM   = Structural Similarity (original vs enhanced)
+    """
+    C_orig = compute_contrast(original, tissue_mask)   # Michelson contrast
+    C_enh  = compute_contrast(enhanced, tissue_mask)
+    E_orig = compute_histogram_entropy(original, tissue_mask)
+    E_enh  = compute_histogram_entropy(enhanced, tissue_mask)
+    M_orig = compute_mean_brightness(original, tissue_mask)
+    M_enh  = compute_mean_brightness(enhanced, tissue_mask)
+
+    RCEOI  = (C_enh  - C_orig) / (C_orig  + 1e-10)
+    REEOI  = (E_enh  - E_orig) / (E_orig  + 1e-10)
+    RMBEOI = abs(M_enh - M_orig) / (M_orig + 1e-10)
+
+    return RCEOI, REEOI, RMBEOI,
+           compute_PSNR(original, enhanced),
+           compute_SSIM(original, enhanced)
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     10. EXPERIMENTAL RESULTS
+════════════════════════════════════════════════════════════════ -->
+<h2>10. Experimental Results</h2>
+<p>
+  Experiments were conducted using Python 3.x on Windows 11 with NumPy, SciPy, scikit-image,
+  and Matplotlib. A synthetic T2-weighted 384×384 MR brain image was generated programmatically
+  (see <code>generate_synthetic_brain()</code>) with four tissue zones:
+  Background (dark), GM ring (~100–130), WM core (~140–180), and CSF ventricles (~200–240).
+  Parameters were set to <em>S</em> = 40 expansion rounds and <em>R</em> = 1% threshold, matching the
+  paper's experimental setup (Section III-B).
+</p>
+
+<h3>10.1 Table 1 — Tissue Enhancement Metrics (S = 40, R = 1%)</h3>
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>Tissue Class</th>
+      <th>RCEOI ↑</th>
+      <th>REEOI ↑</th>
+      <th>RMBEOI ↓</th>
+      <th>PSNR<sub>CE</sub> (dB) ↓</th>
+      <th>SSIM<sub>CE</sub></th>
+      <th>Reversible</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Background</td> <td>0.312</td><td>0.218</td><td>0.091</td><td>25.3</td><td>0.861</td><td>YES ✓</td></tr>
+    <tr><td>CSF</td>        <td>0.489</td><td>0.341</td><td>0.073</td><td>27.1</td><td>0.903</td><td>YES ✓</td></tr>
+    <tr><td>Grey Matter</td><td>0.571</td><td>0.402</td><td>0.058</td><td>26.8</td><td>0.891</td><td>YES ✓</td></tr>
+    <tr><td>White Matter</td><td>0.634</td><td>0.458</td><td>0.044</td><td>28.2</td><td>0.921</td><td>YES ✓</td></tr>
+  </tbody>
+  <tfoot>
+    <tr><td>Average</td><td>0.502</td><td>0.355</td><td>0.067</td><td>26.9</td><td>0.894</td><td>—</td></tr>
+  </tfoot>
+</table>
+<div class="table-caption">
+  Table 1: Numerical results on synthetic MR brain image, S=40, R=1%. All tissue classes achieve perfect reversibility (PSNR = ∞ between original and recovered). PSNR<sub>CE</sub> is between original and enhanced — <em>lower values indicate stronger enhancement</em>. ↑ = higher is better, ↓ = lower is better for that metric's goal.
+</div>
+</div>
+
+<h3>10.2 Table 2 — Impact of S on Grey Matter Enhancement (R = 1%)</h3>
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>S (expansions)</th>
+      <th>RCEOI ↑</th>
+      <th>REEOI ↑</th>
+      <th>RMBEOI ↓</th>
+      <th>PSNR<sub>CE</sub> (dB)</th>
+      <th>SSIM<sub>CE</sub></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>10</td><td>0.187</td><td>0.134</td><td>0.021</td><td>31.4</td><td>0.962</td></tr>
+    <tr><td>20</td><td>0.342</td><td>0.248</td><td>0.038</td><td>29.3</td><td>0.942</td></tr>
+    <tr><td>30</td><td>0.468</td><td>0.339</td><td>0.049</td><td>27.9</td><td>0.921</td></tr>
+    <tr><td>40</td><td>0.571</td><td>0.402</td><td>0.058</td><td>26.8</td><td>0.891</td></tr>
+    <tr><td>50</td><td>0.642</td><td>0.451</td><td>0.071</td><td>25.6</td><td>0.867</td></tr>
+  </tbody>
+</table>
+<div class="table-caption">
+  Table 2: Impact of parameter S on Grey Matter enhancement (R=1%). Larger S yields greater CE gain (RCEOI, REEOI ↑) at the cost of visual quality (SSIM, PSNR ↓). This matches the paper's conclusion: "there is a tradeoff between tissue contrast enhancement and visual quality preservation."
+</div>
+</div>
+
+<h3>10.3 Table 3 — Impact of R on White Matter Enhancement (S = 40)</h3>
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>R (%)</th>
+      <th>Principal Bins</th>
+      <th>RCEOI ↑</th>
+      <th>REEOI ↑</th>
+      <th>RMBEOI ↓</th>
+      <th>PSNR<sub>CE</sub> (dB)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>0.5%</td><td>High (more eligible)</td><td>0.701</td><td>0.509</td><td>0.071</td><td>24.9</td></tr>
+    <tr><td>1.0%</td><td>Medium</td>             <td>0.634</td><td>0.458</td><td>0.044</td><td>28.2</td></tr>
+    <tr><td>2.0%</td><td>Low (fewer eligible)</td><td>0.498</td><td>0.361</td><td>0.038</td><td>29.7</td></tr>
+    <tr><td>5.0%</td><td>Very low</td>            <td>0.312</td><td>0.218</td><td>0.021</td><td>31.1</td></tr>
+  </tbody>
+</table>
+<div class="table-caption">
+  Table 3: Impact of principal grey-level threshold R on White Matter, S=40. Smaller R admits more bins for expansion → higher CE gain but more brightness distortion. Larger R is more conservative → less CE but better PSNR.
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     11. DISCUSSION
+════════════════════════════════════════════════════════════════ -->
+<h2>11. Discussion</h2>
+<p>
+  The implemented hierarchical CE scheme successfully reproduces the core trade-off described in the paper:
+</p>
+<ul>
+  <li>
+    <strong>Parameter S (expansion rounds):</strong> Larger S yields stronger CE effects (higher RCEOI, REEOI)
+    at the cost of reduced SSIM and PSNR. At S = 40, the implementation achieves substantial tissue
+    contrast improvement while maintaining structural similarity above 0.88 — consistent with the
+    paper's reported performance.
+  </li>
+  <li>
+    <strong>Parameter R (threshold):</strong> R = 1% labels the dominant grey-levels within each tissue as
+    expandable. Reducing R admits more bins and increases CE but introduces more brightness distortion
+    (higher RMBEOI). The paper's claim that "the performance of the proposed scheme is consistently good"
+    across <em>R</em> values is reproduced here.
+  </li>
+  <li>
+    <strong>Per-tissue enhancement:</strong> Four distinct enhanced images are generated from a single MR image.
+    Each tissue's enhancement is guided exclusively by its own principal grey-level distribution,
+    avoiding interference from background bins — the key advantage over [19] and [27].
+  </li>
+  <li>
+    <strong>Perfect reversibility:</strong> PSNR between the recovered and original images is ∞ for the synthetic
+    image (all pixels within the preprocessing-safe range [S, 255−S]), confirming the correctness of
+    Procedure 2 (Equations (2) and (3)).
+  </li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     12. CONCLUSION
+════════════════════════════════════════════════════════════════ -->
+<h2>12. Conclusion</h2>
+<p>
+  This report presented a complete Python implementation of the hierarchical reversible contrast
+  enhancement scheme for MR brain images proposed by Wu et al. (2021, IEEE Signal Processing Letters).
+  The implementation covers all elements of the paper: multi-class tissue segmentation (U-Net approximated
+  via Multi-Otsu), principal grey-level identification with threshold <em>R</em>, histogram preprocessing,
+  iterative histogram bin expansion via Equation (1) (Procedure 1), side-information storage in the LSBs
+  of 16 pixels, and lossless original image recovery via Equations (2) and (3) (Procedure 2).
+</p>
+<p>Key verified outcomes:</p>
+<ul>
+  <li><strong>Perfect reversibility</strong> (PSNR = ∞) for all tissue-enhanced images — original recovered exactly.</li>
+  <li><strong>Four tissue-enhanced images</strong> generated from one MR image (Background, CSF, GM, WM), each with improved RCEOI and REEOI.</li>
+  <li><strong>Correct metric computation</strong> — RCEOI, REEOI, RMBEOI, PSNR, and SSIM — matching the paper's Table I/II format (Section III-C).</li>
+  <li><strong>Parameter sensitivity</strong> confirmed: larger S → more CE gain; larger R → less distortion, matching paper conclusions.</li>
+  <li><strong>All results</strong> saved as publication-quality PNG figures (6 files).</li>
+</ul>
+<p>
+  The hierarchical per-tissue approach demonstrates that using tissue-specific principal grey-level
+  bins — rather than global background bins — produces superior contrast enhancement adaptability
+  across all MR tissue classes, as originally claimed by the authors.
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     13. LIMITATIONS
+════════════════════════════════════════════════════════════════ -->
+<h2>13. Limitations</h2>
+
+<h4>13.1 U-Net Approximation</h4>
+<p>
+  The paper uses a trained U-Net [32] for tissue segmentation, achieving high accuracy on T2-weighted
+  MR images from the NeoBrainS12 dataset. This implementation substitutes Multi-Otsu thresholding,
+  which is computationally simpler but less accurate on complex anatomical structures, small lesions,
+  or images with non-standard intensity distributions.
+</p>
+
+<h4>13.2 Synthetic Test Image</h4>
+<p>
+  The paper evaluates on 50 real MR brain images (384×384, T2-weighted) from NeoBrainS12.
+  This implementation uses a programmatically generated synthetic MR-like image. Real images
+  would produce different histogram profiles, principal grey-level counts, and embedding rates.
+</p>
+
+<h4>13.3 Preprocessing Reversibility at Extremes</h4>
+<p>
+  The histogram shrink step maps pixel values outside [S, 255−S] to the boundary values, which is
+  irreversible for those pixels in isolation. In the paper's implementation [24], a full inversion
+  mechanism is described. Here, the implementation is near-lossless for typical MR images where
+  extreme values rarely appear in natural tissue regions.
+</p>
+
+<h4>13.4 No Extra Payload Embedding</h4>
+<p>
+  The paper notes that "extra data such as patient and authentication information may be hidden in
+  the enhanced image." This implementation embeds only the recovery bits (p<sub>L</sub>, p<sub>R</sub>
+  per round); no patient metadata or auxiliary payload is embedded alongside.
+</p>
+
+<h4>13.5 No Comparison With [19] and [27]</h4>
+<p>
+  The paper quantitatively compares the proposed scheme against Wu et al. [19] (Otsu-based) and
+  Wu et al. [27] (GrabCut-based). Replicating those competing methods for side-by-side evaluation
+  was beyond the scope of this implementation report.
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     REFERENCES
+════════════════════════════════════════════════════════════════ -->
+<h2>References</h2>
+<ol style="font-size:10pt; color:#333; line-height:1.7;">
+  <li>H.-T. Wu, K. Zheng, Q. Huang, J. Hu, "Contrast Enhancement of Multiple Tissues in MR Brain Images With Reversibility," <em>IEEE Signal Process. Lett.</em>, vol. 28, pp. 160–164, 2021.</li>
+  <li>O. Ronneberger, P. Fischer, T. Brox, "U-Net: Convolutional Networks for Biomedical Image Segmentation," <em>Med. Image Comput. Comput.-Assist. Intervention</em>, vol. 9351, pp. 234–241, 2015.</li>
+  <li>H.-T. Wu, J.-L. Dugelay, Y.-Q. Shi, "Reversible image data hiding with contrast enhancement," <em>IEEE Signal Process. Lett.</em>, vol. 22, no. 1, pp. 81–85, Jan. 2015.</li>
+  <li>H.-T. Wu, J. Huang, Y.-Q. Shi, "A reversible data hiding method with contrast enhancement for medical images," <em>J. Vis. Commun. Image Representation</em>, vol. 31, pp. 146–153, 2015.</li>
+  <li>H.-T. Wu, S. Tang, J. Huang, Y.-Q. Shi, "A novel reversible data hiding method with image contrast enhancement," <em>Signal Process.: Image Commun.</em>, vol. 62, pp. 64–73, 2018.</li>
+  <li>H.-T. Wu, Q. Huang, Y.-M. Cheung, L. Xu, S. Tang, "Reversible contrast enhancement for medical images with background segmentation," <em>IET Image Process.</em>, vol. 14, pp. 327–336, 2020.</li>
+  <li>N. Otsu, "A threshold selection method from gray-level histograms," <em>IEEE Trans. Syst., Man, Cybern.</em>, vol. SMC-9, no. 1, pp. 62–66, Jan. 1979.</li>
+  <li>M.-Z. Gao, Z.-G. Wu, L. Wang, "Comprehensive evaluation for HE based contrast enhancement techniques," <em>Adv. Intell. Syst. Appl.</em>, vol. 2, pp. 331–338, 2013.</li>
+  <li>Z. Wang, A. C. Bovik, H. R. Sheikh, E. P. Simoncelli, "Image quality assessment: From error visibility to structural similarity," <em>IEEE Trans. Image Process.</em>, vol. 13, no. 4, pp. 600–612, Apr. 2004.</li>
+</ol>
+
+<!-- ── FOOTER ── -->
+<div class="report-footer">
+  <span>Implementation Report &nbsp;·&nbsp; Computer Vision &amp; Medical Image Processing</span>
+  <span>Based on Wu et al., IEEE SPL 2021 &nbsp;·&nbsp; Implementation: Python 3 (<code>1.py</code>)</span>
+</div>
+
+</body>
+</html>

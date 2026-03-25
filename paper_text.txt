@@ -1,0 +1,487 @@
+
+
+========== PAGE 1 ==========
+
+160
+IEEE SIGNAL PROCESSING LETTERS, VOL. 28, 2021
+Contrast Enhancement of Multiple Tissues in MR
+Brain Images With Reversibility
+Hao-Tian Wu
+, Senior Member, IEEE, Kaihan Zheng, Qi Huang, and Jiankun Hu
+, Senior Member, IEEE
+Abstract—Contrast enhancement (CE) of magnetic resonance
+(MR) brain images is an important technique to bring out the
+tissue details for clinical diagnosis. Recently, a new form of image
+enhancement has been proposed to complete the task without
+any information loss. Speciﬁcally, information required to restore
+the original image is reversibly hidden into the enhanced image.
+Moreover, several image segmentation based algorithms have been
+proposed so that the region of interest can be exclusively enhanced.
+However, with the reversible algorithms, it is hard to properly en-
+hance the tissues in MR brain images when they are relatively small
+or connected with each other. To address this issue, a hierarchical
+CE scheme is proposed for MR brain images with reversibility in
+this letter. Firstly, a deep convolutional neural network is used to
+segment multiple tissue classes automatically. Then, the segmented
+tissues are individually utilized to guide the CE procedure so that
+individual-tissue-enhanced images are generated. Compared with
+using the background information to guide the CE procedure,
+better tissue enhancement effects and visual quality are both ob-
+tained by our proposed hierarchical scheme. The evaluation results
+obtained over MR brain test images demonstrate the reversibility
+and adaptability of the proposed scheme for the enhancement of
+interested tissues.
+Index Terms—Image segmentation, magnetic resonance image,
+medical image enhancement, reversible data hiding.
+I. INTRODUCTION
+M
+AGNETIC resonance imaging (MRI) plays a key role
+in clinical diagnosis by using a magnetic ﬁeld and radio
+waves to create detailed pictures of the brain or other organs [1],
+[2]. One advantage of using the MRI is that little harmful
+radiation is emitted to the bodies, but the resultant image may be
+with low contrast. Since it is not easy for a clinician to perform
+diagnosis on the low-contrast images, it will be helpful if the
+contrast of tissues in magnetic resonance (MR) images can be
+increased [3]. Thus contrast enhancement (CE) is considered as
+an important preprocessing in medical image analysis.
+Manuscript received November 17, 2020; revised December 22, 2020; ac-
+cepted December 26, 2020. Date of publication January 5, 2021; date of current
+version January 27, 2021. This work was supported in part by the NSFC under
+Grant 61772208; in part by the Fundamental Research Funds for the Central
+Universities of China under Grant x2js-D2190700; and in part by the ARC
+under Grant DP190103660, Grant DP200103207, and Grant LP180100663.
+The associate editor coordinating the review of this manuscript and approving
+it for publication was Dr. Ananda S. Chowdhury. (Corresponding author:
+Hao-Tian Wu.)
+Hao-Tian Wu, Kaihan Zheng, and Qi Huang are with the School of Computer
+Science and Engineering, South China University of Technology, Guangzhou
+510006, China (e-mail: wuht@scut.edu.cn; 201921042323@mail.scut.edu.cn;
+201720140339@mail.scut.edu.cn).
+Jiankun Hu is with the School of Engineering and Information Technology,
+The University of New South Wales, Australian Defence Force Academy,
+Canberra ACT 2600, Australia (e-mail: J.Hu@adfa.edu.au).
+Digital Object Identiﬁer 10.1109/LSP.2020.3048840
+Recently, a new procedure has been proposed to perform the
+task of image CE without information loss. By using the tech-
+nique of reversible data hiding (RDH) [4]–[16], all information
+required to restore the original image is reversibly hidden into
+the enhanced image [17]–[27]. Additionally, extra data such as
+patient and authentication information may be hidden in the
+enhanced image [19], [21], [23], [27], which can be extracted
+when needed. If a contrast-enhanced image is unsuitable for
+an application, a new image can be generated after recovering
+the original one. Compared with the reversible schemes for
+computed tomography images (e.g., [19], [21], [23]), there are
+few relevant algorithms for the MR images.
+The ﬁrst work combining image CE with RDH was proposed
+in [17]. However, directly applying it to medical images does
+not produce satisfactory effects due to the monotonous back-
+ground. To improve the visual quality after the CE, the Otsu’s
+method [28] was adopted in [19] for background segmentation
+in medical images so that the region of interest (ROI) can be
+specially enhanced. Although better performance was obtained
+by differentiating the bins in histogram equalization (HE), the
+scheme proposed in [19] has some limitations. Firstly, the Otsu’s
+method segments an image into two parts according to an au-
+tomatically calculated threshold. However, the segmentation is
+not always accurate, especially when the ROI region is small or
+the image histogram is not subject to the bimodal distribution. In
+order to improve the accuracy, a user interaction based segmen-
+tation algorithm named Grabcut [29] was employed in [27]. As
+the ROI can be better segmented with the aid of user interactions,
+difﬁculties may arise when the ROI regions are connected with
+each other. Secondly, the algorithms in [19], [27] utilized the
+segmented background to guide the procedure but they do not
+work well when the same pixel values are contained in the ROI
+and the background.
+In this letter, we propose a hierarchical CE scheme to improve
+the performance of pre-screening multiple tissues in the MR
+images. As quite a few MR image segmentation methods have
+been proposed (e.g., [30], [31]), a convolutional neural network
+(CNN) is adopted in our scheme to perform tissue segmentation
+automatically to enhance multiple tissues individually. Differ-
+ent from the algorithms proposed in [19], [27], the principal
+grey-level values in each segmented tissue are identiﬁed and
+used to bring out the details. In particular, only the histogram
+bins of the principal values are labelled and equalized for data
+embedding. A ﬂowchart of the proposed reversible CE scheme
+is illustrated in Fig. 1, whereby several tissue-enhanced images
+may be generated from the same MR image, respectively. The
+1070-9908 © 2021 IEEE. Personal use is permitted, but republication/redistribution requires IEEE permission.
+See https://www.ieee.org/publications/rights/index.html for more information.
+Authorized licensed use limited to: Indian Institute of Info. Technology Vadodara. Downloaded on January 28,2026 at 12:13:52 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+========== PAGE 2 ==========
+
+WU et al.: CONTRAST ENHANCEMENT OF MULTIPLE TISSUES IN MR BRAIN IMAGES WITH REVERSIBILITY
+161
+Fig. 1.
+Flowchart of a scheme for reversible MR image enhancement.
+experimental results on a set of MR brain images have shown
+the efﬁcacy and applicability of our proposed scheme. The
+evaluationresultsdemonstratethesuperiorperformanceinterms
+of CE effect and image visual quality by comparing with the
+algorithms in [19] and [27].
+In the next section, a procedure of RDH with CE will be
+introduced, followed by a new scheme for the tissue enhance-
+ment of the MR images. The experiments and evaluation results
+are presented in Section III. Finally, the concluding remarks are
+drawn in Section IV.
+II. SCHEME FOR REVERSIBLE MR IMAGE ENHANCEMENT
+Before proposing a new scheme for the reversible tissue en-
+hancement, a RDH-based procedure will be brieﬂy introduced.
+A. RDH-Based Procedure for Image Enhancement
+For reversible CE of a grey-level image, a RDH-based method
+is presented in [17]. Firstly, an image histogram is obtained by
+counting the number of every grey-level value. In the histogram,
+the highest two bins are found out and their values are denoted as
+pL and pR (pL < pR), respectively. By shifting the bins around
+the chosen bins outward, two empty bins are created so that each
+of the chosen bins may be expanded into two adjacent bins, re-
+spectively. Speciﬁcally, the histogram is modiﬁed by traversing
+all pixels in a given order and a pixel value p is changed to p′ by
+p′ =
+⎧
+⎪
+⎪
+⎪
+⎪
+⎨
+⎪
+⎪
+⎪
+⎪
+⎩
+p −1,
+if p < pL
+p −bi,
+if p = pL
+p,
+if pL < p < pR
+p + bi,
+if p = pR
+p + 1,
+if p > pR
+.
+(1)
+Note that p is unchanged if it is between pL and pR. When
+p < pL or p > pR, p is modiﬁed but no bit is embedded. For the
+i-th pixel with value pL or pR, the i-th bit value (0 or 1), which is
+denoted by bi, is embedded by changing p to p′. After applying
+Eq. (1) to every pixel that is contained in the histogram, each of
+the chosen bins are expanded to two adjacent bins. After that,
+pL and pR need to be updated by ﬁnding them in the modiﬁed
+histogram. By iteratively modifying the histogram by applying
+Eq. (1), the effects of HE can be achieved while the original
+pixel values can be restored according to the recorded pL and
+pR values. The bounding pixel values (0 and 255 for a 8-bit
+pixel value) may be overﬂowed after histogram modiﬁcation.
+To prevent the overﬂow, a preprocessing needs to be performed
+to reserve S empty bins on the each side of histogram before
+expanding S pairs of bins to obtain the effects of HE. In [20],
+another RDH-based algorithm is proposed by shifting the
+histogram bins towards one direction at each time. Similarly,
+the effects of CE can be achieved by iteratively expanding the
+highest bin in the histogram into two adjacent ones.
+B. Proposed Scheme for Reversible MR Image Enhancement
+Based on the aforementioned procedure, a hierarchical CE
+scheme is proposed for MR images according to the ﬂowchart
+as shown in Fig. 1. Different from other reversible algorithms,
+the ROI regions in a MR image are individually utilized to guide
+the procedure of CE so that several tissue-enhanced images can
+be generated from one MR image, respectively.
+1) Tissue Segmentation: The ROI (e.g., tumors) in MR brain
+images usually exist in the tissues such as cerebellum and
+unmyelinated white matter. To recognize and segment different
+tissues, a CNN-based method is adopted to automatically divide
+a MR brain image into different areas by their tissue classes.
+For simplicity of implementation, we use the U-Net [32] as the
+segmentation module. U-Net is a classic image segmentation
+framework with 2D CNN, and it works with few training images
+to yield precise segmentation results.
+2) HierarchicalCEofSegmentedTissues: In[19],[27],some
+bins in the histogram are excluded from being expanded. As
+the same pixel values may exist in both background and ROI,
+the interested regions may not be properly brought out. Besides,
+multiple ROI regions cannot be separately enhanced by applying
+the methods in [19]. To cope with these issues, a hierarchical CE
+scheme is proposed in this letter by calculating the percentage
+of every grey-level value in a segmented tissue. If the percentage
+of a grey-level value is over a threshold R, the corresponding
+Authorized licensed use limited to: Indian Institute of Info. Technology Vadodara. Downloaded on January 28,2026 at 12:13:52 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+========== PAGE 3 ==========
+
+162
+IEEE SIGNAL PROCESSING LETTERS, VOL. 28, 2021
+histogram bin is eligible to be expanded for data embedding,
+while the rest bins can only be shifted in the histogram modiﬁ-
+cation. Since the histogram bins to be equalized are chosen ac-
+cording to each tissue to be enhanced, multiple tissue-enhanced
+images can be obtained by enhancing every segmented tissue
+individually.
+3) Procedure of Hierarchical Tissue Enhancement: The pro-
+cess of tissue CE is presented in Procedure 1 by expanding
+S pairs of histogram bins so that a tissue-enhanced image Ic
+is generated from a MR image I. The preprocessing proposed
+in [24] is adopted, which shrinks the histogram while preserving
+the order of all pixel values to avoid visual distortions. Note that
+the least signiﬁcant bit (LSB) of sixteen pixels are used to save
+the last two expanded bin values represented in sixteen bits. For
+simplicity of understanding, the last sixteen pixels are chosen in
+Procedure 1, whose positions can also be randomly chosen with
+a secret key. Since the LSB is overwritten only once, no visual
+pattern will be caused. The value of S needs to be hidden in Ic,
+while neither the segmentation information nor the value of R
+is required for original image recovery.
+4) Recovery of Original Image: To extract the hidden data,
+the values of the lastly expanded bins should be known, which
+are denoted by pLL and pLR, respectively. Then the pixels
+in a tissue-enhanced image are traversed to ﬁnd those values
+equaling to any of {pLL −1, pLL, pLR, pLR + 1}. A bit value
+denoted by b′ may be obtained from a pixel value p′ by
+b′ =
+⎧
+⎨
+⎩
+1,
+when p′ = pLL −1 or p′ = pLR + 1
+0,
+when p′ = pLL or p′ = pLR
+null, other cases
+.
+(2)
+Meanwhile, a new pixel value p is generated to replace p′ by
+p =
+⎧
+⎨
+⎩
+p′ + 1, when p′ < pLL
+p,′
+when pLL −1 < p′ < pLR + 1
+p′ −1, when p′ > pLR
+.
+(3)
+Fig. 2.
+MR brain image and segmentation results.
+By collecting the extracted bits, the value of S and those of
+the previously expanded bins can be known. The preprocessed
+image can be obtained by updating the values of {pLL, pLR} in
+Eq. (2) and Eq. (3) for S−1 times. The process of data extraction
+and image recovery is summarized in Procedure 2.
+III. EXPERIMENTAL RESULTS
+We applied the proposed scheme and the schemes in [19], [27]
+to a set of 50 MR brain images, which were downloaded from
+the NeoBrainS12 challenge website [33]. Each of the test images
+was associated with a fully annotated ground truth segmentation
+map of tissue classes.
+A. Tissue Segmentation
+Whenapplyingtheproposedscheme,tissuesegmentationwas
+conducted by adopting the U-Net [32]. A set of 50 T2-weighted
+MR images at a resolution of 384 × 384 pixels were used as
+training data. For illustration, one test MR image and the results
+obtained with the U-Net [32] and Ostu’s method [28] are shown
+in Fig. 2, respectively. Otsu’s method may be applied to separate
+image background from the foreground, but cannot segment the
+individual tissue from the MR brain image. By adopting the U-
+Net,multipletissueswereautomaticallysegmentedfromtheMR
+images with high accuracy. Similar results were also obtained
+for other test images.
+B. Visual Effects of CE and Reversibility
+We compare the visual effects by setting parameters R and
+S to 0.01 and 40 in the proposed scheme and [19], [27],
+respectively. In applying the proposed scheme, the grey-level
+values whose percentages over 1% of the segmented tissue
+are labelled and the corresponding histogram bins are eligible
+to be expanded. In applying the schemes in [19], [27], the
+grey-level values whose percentages over 1% of the background
+are identiﬁed and the corresponding bins are excluded from
+being expanded in HE. In implementing each scheme, the same
+number of histogram bins are expanded.
+From the MR brain image shown in Fig. 2(a), multiple tissue-
+enhanced images are obtained with the proposed scheme, as
+shown in Fig. 3 and Fig. 4. The enhanced tissues are identiﬁed
+according to the ground truth segmentation map, which are
+zoomed in the red box, respectively. When applying the scheme
+in [27], tissue segmentation is conducted by manually selecting
+the background and ROI region. When the regions of the tissues
+to be segmented are small, the background used to guide the
+process of CE varies little. The schemes in [19], [27] can only
+enhance all ROI regions at the same time so that only one
+contrast-enhanced image is generated from the original MR
+Authorized licensed use limited to: Indian Institute of Info. Technology Vadodara. Downloaded on January 28,2026 at 12:13:52 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+========== PAGE 4 ==========
+
+WU et al.: CONTRAST ENHANCEMENT OF MULTIPLE TISSUES IN MR BRAIN IMAGES WITH REVERSIBILITY
+163
+Fig. 3.
+Tissue-enhanced MR images with zoomed tissue (S = 40 and R =
+0.01).
+Fig. 4.
+Tissue-enhanced MR images with zoomed tissue (S = 40 and R =
+0.01).
+image. As shown in Fig. 3 and Fig. 4, each tissue in the original
+MR brain image can be adaptively enhanced with the proposed
+scheme because the details of each ROI are better brought out.
+With all of the schemes compared, each original MR image was
+correctly recovered from its enhanced versions.
+C. Numerical Evaluation of Tissue Enhancement
+To measure the effects of CE, relative entropy error, relative
+contrast error and relative mean brightness error deﬁned in [34]
+are calculated in each tissue by referring to the ground truth,
+respectively denoted by RCEOI, REEOI and RMBEOI. The
+peaked signal-to-noise ratio (PSNR) and Structural SIMilarity
+(SSIM) index [35] are also calculated between the original and
+contrast-enhanced images. By applying the proposed scheme
+and those in [19], [27], the average results obtained from ﬁve
+MR brain images are listed in Table I and Table II for different
+values of S and R. The data hiding rate is deﬁned as the number
+of extra bits hidden per pixel (bpp in short) so that reversibility
+is achieved with any positive rate.
+It can be seen that better CE effects are achieved with the
+proposed scheme because the largest REEOI and RCEOI are
+TABLE I
+NUMERICAL RESULTS (MEAN) OBTAINED FROM FIVE MR BRAIN IMAGES FOR
+THE TISSUE CLASS AS SHOWN IN FIG. 3
+TABLE II
+NUMERICAL RESULTS (MEAN) OBTAINED FROM FIVE MR BRAIN IMAGES FOR
+THE TISSUE CLASS AS SHOWN IN FIG. 4
+obtained for R = 1% and R = 2%, respectively. The scheme
+in [27] performs slightly better with a smaller R, while less CE
+effects are achieved with the scheme in [19]. In general, the
+SSIM, RMBEOI and PSNR are better at a lower value of S
+whereas both contrast (RCEOI) and entropy (REEOI) beneﬁt
+from larger S. When applying the schemes in [19], [27], the
+resultant effects vary a lot along with R. The performance of
+the proposed scheme is consistently good, indicating that better
+adaptability for the tissue CE in the MR images is achieved.
+IV. CONCLUSION
+We have proposed a hierarchical tissue enhancement scheme
+for MR images by adopting a preprocessing strategy and em-
+ploying the U-Net [32] for segmentation. By analyzing each
+segmented tissue, different tissues in MR brain images can be
+individually enhanced to bring out the details. The numerical
+results on a set of MR images have shown the reversibility and
+better adaptability of the proposed scheme. In general, there is a
+tradeoff between tissue contrast enhancement and visual quality
+preservation when applying the reversible methods.
+Authorized licensed use limited to: Indian Institute of Info. Technology Vadodara. Downloaded on January 28,2026 at 12:13:52 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+========== PAGE 5 ==========
+
+164
+IEEE SIGNAL PROCESSING LETTERS, VOL. 28, 2021
+REFERENCES
+[1] D. Ma et al., “Magnetic resonance ﬁngerprinting,” Nature, vol. 495,
+no. 7440, pp. 187–192, 2013.
+[2] K. Scheufele, S. Subramanian, and G. Biros, “Fully automatic cal-
+ibration of tumor-growth models using a single mpMRI scan,”
+IEEE Trans. Med. Imag., vol. 40, no. 1, pp. 193–204, Jan. 2021.
+DOI: 10.1109/TMI.2020.3024264
+[3] L. Rundo et al., “A novel framework for MR image segmentation and
+quantiﬁcation by using MedGA,” Comput. Methods Programs Biomed.,
+vol. 176, pp. 159–172, 2019.
+[4] J. Tian, “Reversible data embedding using a difference expansion,” IEEE
+Trans.CircuitsSyst.VideoTechnol.,vol.13,no.8,pp.890–896,Aug.2003.
+[5] Y.-Q. Shi, X. Li, X. Zhang, H.-T. Wu, and B. Ma, “Reversible data hiding:
+Advances in the past two decades,” IEEE Access, vol. 4, pp. 3210–3237,
+2016.
+[6] D. Coltuc and J.-M. Chassery, “Very fast watermarking by reversible
+contrast mapping,” IEEE Signal Process. Lett., vol. 14, no. 4, pp. 255–258,
+Apr. 2007.
+[7] S. Weng, Y. Zhao, J.-S. Pan, and R. Ni, “Reversible watermarking based
+on invariability and adjustment on pixel pairs,” IEEE Signal Process. Lett.,
+vol. 15, pp. 721–724, 2008.
+[8] B. Ou, X. Li, Y. Zhao, R. Ni, and Y.-Q. Shi, “Pairwise prediction-error ex-
+pansion for efﬁcient reversible data hiding,” IEEE Trans. Image Process.,
+vol. 22, no. 12, pp. 5010–5021, Dec. 2013.
+[9] X. Li, W. Zhang, X. Gui, and B. Yang, “A novel reversible data hiding
+scheme based on two-dimensional difference-histogram modiﬁcation,”
+IEEE Trans. Inf. Forensics Secur., vol. 8, no. 7, pp. 1091–1100, Jul. 2013.
+[10] W. Zhang, X. Hu, X. Li, and N. Yu, “Recursive histogram modiﬁcation:
+Establishing equivalency between reversible data hiding and lossless data
+compression,” IEEE Trans. Image Process., vol. 22, no. 7, pp. 2775–2785,
+Jul. 2013.
+[11] X. Li, B. Li, B. Yang, and T. Zeng, “General framework to histogram-
+shifting-based reversible data hiding,” IEEE Trans. Image Process.,
+vol. 22, no. 6, pp. 2181–2191, Jun. 2013.
+[12] I.-C. Dragoi and D. Coltuc, “On local prediction based reversible water-
+marking,” IEEE Trans. Image Process., vol. 24, no. 4, pp. 1244–1246,
+Apr. 2015.
+[13] I.-C. Dragoi and D. Coltuc, “Adaptive pairing reversible watermarking,”
+IEEE Trans. Image Process., vol. 25, no. 5, pp. 2420–2422, May 2016.
+[14] J. Wang, J. Ni, X. Zhang, and Y.-Q. Shi, “Rate and distortion optimization
+for reversible data hiding using multiple histogram shifting,” IEEE Trans.
+Cybern., vol. 47, no. 2, pp. 315–326, Feb. 2017.
+[15] F. Peng, Z. Lin, X. Zhang, and M. Long, “Reversible data hiding in
+encrypted 2D vector graphics based on reversible mapping model for real
+numbers,” IEEE Trans. Inf. Forensics Secur., vol. 14, no. 9, pp. 2400–2411,
+Sep. 2019.
+[16] J. Wang, X. Chen, J. Ni, N. Mao, and Y.-Q. Shi, “Multiple histograms
+based reversible data hiding: Framework and realization,” IEEE Trans.
+Circuits Syst. Video Technol., vol. 30, no. 8, pp. 2313–2328, Aug. 2020.
+[17] H.-T.Wu,J.-L.Dugelay,andY.-Q.Shi,“Reversibleimagedatahidingwith
+contrast enhancement,” IEEE Signal Process. Lett., vol. 22, no. 1, pp. 81–
+85, Jan. 2015.
+[18] G. Gao and Y.-Q. Shi, “Reversible data hiding using controlled contrast
+enhancement and integer wavelet transform,” IEEE Signal Process. Lett.,
+vol. 22, no. 11, pp. 2078–2082, Nov. 2015.
+[19] H.-T. Wu, J. Huang, and Y.-Q. Shi, “A reversible data hiding method
+with contrast enhancement for medical images,” J. Vis. Commun. Image
+Representation, vol. 31, pp. 146–153, 2015.
+[20] S. Kim, R. Lussi, X. Qu, and H.-J. Kim, “Automatic contrast enhancement
+using reversible data hiding,” in Proc. IEEE Int. Workshop Inf. Forensics
+Secur., 2015, pp. 1–5.
+[21] Y. Yang, W. Zhang, D. Liang, and N. Yu, “Reversible data hiding in medical
+images with enhanced contrast in texture area,” Digit. Signal Process.,
+vol. 52, pp. 13–24, 2016.
+[22] H. Chen, J. Ni, W. Hong, and T.-S. Chen, “Reversible data hiding with
+contrast enhancement using adaptive histogram shifting and pixel value
+ordering,” Signal Process.: Image Commun., vol. 46, pp. 1–16, 2016.
+[23] G. Gao, X. Wang, S. Yao, Z. Cui, and X. Sun, “Reversible data hiding
+with contrast enhancement and tamper localization for medical images,”
+Inf. Sci., vols. 385/386, pp. 250–265, 2017.
+[24] H.-T. Wu, S. Tang, J. Huang, and Y.-Q. Shi, “A novel reversible data
+hiding method with image contrast enhancement,” Signal Process.: Image
+Commun., vol. 62, pp. 64–73, 2018.
+[25] H.-T. Wu, W. Mai, S. Meng, Y.-M. Cheung, and S. Tang, “Reversible
+data hiding with image contrast enhancement based on two-dimensional
+histogram modiﬁcation,” IEEE Access, vol. 7, pp. 83332–83342, 2019.
+[26] S. Kim, R. Lussi, X. Qu, F. Huang, and H.-J. Kim, “Reversible data hiding
+with automatic brightness preserving contrast enhancement,” IEEE Trans.
+Circuits Syst. Video Technol., vol. 29, no. 8, pp. 2271–2284, Aug. 2019.
+[27] H.-T. Wu, Q. Huang, Y.-M. Cheung, L. Xu, and S. Tang, “Reversible
+contrast enhancement for medical images with background segmentation,”
+IET Image Process., vol. 14, pp. 327–336, 2020.
+[28] N. Otsu, “A threshold selection method from gray-level histograms,” IEEE
+Trans. Syst., Man, Cybern., vol. SMC-9, no. 1, pp. 62–66, Jan. 1979.
+[29] C. Rother, V. Kolmogorov, and A. Blake, “GrabCut: Interactive fore-
+ground extraction using iterated graph cuts,” ACM Trans. Graph,
+vol. 23, no. 3, pp. 309–314, 2004.
+[30] C. Militello et al., “Gamma knife treatment planning: MR brain tumor
+segmentation and volume measurement based on unsupervised fuzzy C-
+means clustering,” Int. J. Imag. Syst. Technol., vol. 25, no. 3, pp. 213–225,
+2015.
+[31] S. Bauer, L.-P. Nolte, and M. Reyes, “Fully automatic segmentation of
+brain tumor images using support vector machine classiﬁcation in combi-
+nation with hierarchical conditional random ﬁeld regularization,” Med.
+Image Comput. Comput.-Assist. Intervention, vol. 6893, pp. 354–361,
+2011.
+[32] O. Ronneberger, P. Fischer, and T. Brox, “U-Net: Convolutional networks
+for biomedical image segmentation,” Med. Image Comput. Comput.-
+Assist. Intervention, vol. 9351, pp. 234–241, 2015.
+[33] “MICCAI Grand Challenge: Neonatal Brain Segmentation” 2012. [On-
+line]. Available: https://neobrains12.isi.uu.nl/
+[34] M.-Z. Gao, Z.-G. Wu, and L. Wang, “Comprehensive evaluation for
+HE based contrast enhancement techniques,” Adv. Intell. Syst. Appl.,
+vol. 2, pp. 331–338, 2013.
+[35] Z. Wang, A. C. Bovik, H. R. Sheikh, and E. P. Simoncelli, “Image quality
+assessment: From error visibility to structural similarity,” IEEE Trans.
+Image Process., vol. 13, no. 4, pp. 600–612, Apr. 2004.
+Authorized licensed use limited to: Indian Institute of Info. Technology Vadodara. Downloaded on January 28,2026 at 12:13:52 UTC from IEEE Xplore.  Restrictions apply. 
