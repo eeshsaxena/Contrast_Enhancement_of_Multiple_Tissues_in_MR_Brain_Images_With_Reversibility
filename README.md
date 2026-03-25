@@ -34,5 +34,3 @@ The script will:
   - Recover the original image from each enhanced image (Procedure 2)
   - Compute and display all paper metrics in a table
   - Display comparison figures
-=============================================================================
-"""
