@@ -8,7 +8,7 @@ DOI: 10.1109/LSP.2020.3048840
 =============================================================================
 
 PAPER OVERVIEW:
---------------
+-----
 This paper proposes a hierarchical contrast enhancement (CE) scheme for MR brain
 images with reversibility using Reversible Data Hiding (RDH).
 
